@@ -45,6 +45,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import spacy
+spacy_en = spacy.load('en_core_web_sm')
 
 class TransformerModel(nn.Module):
 
@@ -348,17 +350,18 @@ def word_ids_to_sentence(id_tensor, vocab, join=None):
         return batch
     else:
         return join.join(batch)
-    
 
 def word_to_input_vectors(text):
     pass 
 
+def tokenizer(text): # create a tokenizer function
+    return [tok.text for tok in spacy_en.tokenizer(text)]
+
 def inference(input):
-    arrs = saved_model(train_data[:7]).cpu().data.numpy()
-    #input 
-    print('Input:\n')
-    print(word_ids_to_sentence(train_data[:7], TEXT.vocab, join=' '))
-    #output
-    print('Output:\n')
-    print(word_ids_to_sentence(np.argmax(arrs, axis=2), TEXT.vocab, join=' '))
-    pass
+    #arrs = saved_model(train_data[:7]).cpu().data.numpy()
+    input_field = torchtext.data.Field(sequential=True, tokenize=tokenizer, lower=True)
+    clean_input = input_field.preprocess(input)
+    string_to_index = torch.tensor([TEXT.vocab.stoi[i] for i in clean_input], device="cpu")
+    arrs = saved_model(string_to_index).cpu().data.numpy()
+    output = word_ids_to_sentence(np.argmax(arrs, axis=2), TEXT.vocab, join=' ')
+    print(output)
