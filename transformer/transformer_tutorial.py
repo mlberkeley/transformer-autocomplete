@@ -369,3 +369,12 @@ def inference(input):
     arrs = saved_model(string_to_index).cpu().data.numpy()
     output = word_ids_to_sentence(np.argmax(arrs, axis=2), TEXT.vocab, join=' ')
     print(output)
+
+def last_word(text):
+    INPUT = torchtext.data.Field(sequential=True, tokenize=tokenizer, lower=True)
+    clean_input = INPUT.preprocess(input)
+    string_to_index = torch.tensor([TEXT.vocab.stoi[i] for i in clean_input], device="cpu")
+    arrs = np.argmax(saved_model(string_to_index).cpu().data.numpy(), axis=2)
+    #print(arrs)
+    output = TEXT.vocab.itos[arrs[-1][-1]]
+    print(output)
