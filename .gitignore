@@ -1,3 +1,4 @@
 *.DS_Store
 *.pyc
 github_scraping/env/*
+github_scraping/tokens.csv
