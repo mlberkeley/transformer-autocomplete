@@ -1,4 +1,8 @@
-import vim
+try:
+    import vim
+except ImportError:
+    print("paths without vim")
+
 def PathToPythonInterpreter():
     import utils
 

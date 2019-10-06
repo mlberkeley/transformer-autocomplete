@@ -1,18 +1,18 @@
 ## Adapted from YCM
-import vimsupport
 import vim
+import vimsupport
 import json
 import logging
 from future.utils import native
-from utils import GetCurrentDirectory, ToBytes, urljoin
+from utils import GetCurrentDirectory, ToBytes, urljoin, get_data
 
 _READ_TIMEOUT_SEC = 30 
-_HEADERS = {'conent-type': 'application/json'}
+_HEADERS = {'content-type': 'application/json'}
 _CONNECT_TIMEOUT_SEC = 0.01
-_logger = logging.getLogger(__name__)
-
+_logger = logging.getLogger('gpt')
 
 class BaseRequest(object):
+
     def __init__(self):
         self._should_resend = False
 
@@ -27,22 +27,6 @@ class BaseRequest(object):
 
     def ShouldResend(self):
         return self._should_resend
-
-    def BuildRequestData(buffer_number=None):
-        working_dir = GetCurrentDirectory() #TODO
-        current_buffer = vim.current.buffer #TODO: vim
-        # We're going to assume that we only care about the current buffer.
-        current_filepath = vimsupport.GetBufferFilepath(current_buffer)
-        line, column = vimsupport.CurrentLineAndColumn()
-        
-        return {
-            'filepath': current_filepath,
-            'line_num': line + 1,
-            'column_num': column + 1,
-            'working_dir': working_dir,
-            'file_data': vimsupport.GetUnsavedAndSpecifiedBufferData( current_buffer,
-                                          current_filepath )
-        }
 
     def GetDataFromHandler(self,
                            handler,
@@ -60,20 +44,30 @@ class BaseRequest(object):
                      truncate_message=False,):
         try:
             return _JsonFromFuture(future)
-#            except UnknownExtraConf as e:
-#                if vimsupport.Confirm(str(e)):
-#                    _LoadExtraConfFile(e.extra_conf_file)
-#                else:
-#                    _IgnoreExtraConfFile(e.extra_conf_file)
-#                self._should_resent = True
         except BaseRequest.Requests().exceptions.ConnectionError as e:
             print("Yikes! ConnectionError {}".format(e))
+            _logger.error(e)
         except Exception as e:
             print("other exception {}".format(e))    
+            _logger.exception(e)
+            #DisplayServerException(e, truncate_message)
         return None
+
     @staticmethod 
     def PostDataToHandlerAsync(data, handler, timeout=_READ_TIMEOUT_SEC):
+        _logger.info('Posting data to handler')
         return BaseRequest._TalkToHandlerAsync(data, handler, 'POST', timeout)
+
+    def PostDataToHandler( self,
+                           data,
+                           handler,
+                           timeout = _READ_TIMEOUT_SEC,
+                           display_message = True,
+                           truncate_message = False ):
+        return self.HandleFuture(
+            BaseRequest.PostDataToHandlerAsync( data, handler, timeout ),
+            display_message,
+            truncate_message )
         
     @staticmethod
     def _TalkToHandlerAsync(data,
@@ -81,6 +75,7 @@ class BaseRequest(object):
                             method,
                             timeout = _READ_TIMEOUT_SEC):
         request_uri = _BuildUri(handler)
+        _logger.info('Talking to handler async')
         if method == 'POST':
             sent_data = _ToUtf8Json(data)
             return BaseRequest.Session().post(
@@ -95,6 +90,7 @@ class BaseRequest(object):
             headers = BaseRequest._ExtraHeaders(method,
                                                 request_uri,),
             timeout=(_CONNECT_TIMEOUT_SEC, timeout))
+
     @staticmethod
     def _ExtraHeaders( method, request_uri, request_body = None ):
         if not request_body:
@@ -128,6 +124,36 @@ class BaseRequest(object):
             return cls.session
 
     server_location = ''
+
+def BuildRequestData_(buffer_number=None):
+    working_dir = GetCurrentDirectory() #TODO
+    # We're going to assume that we only care about the current buffer.
+    line = 4
+    column = 4
+    current_filepath = './test/test.txt'
+    return {
+        'filepath': current_filepath,
+        'line_num': line + 1,
+        'column_num': column + 1,
+        'working_dir': working_dir,
+        'file_data': get_data(current_filepath)
+    }
+def BuildRequestData(buffer_number=None):
+    working_dir = GetCurrentDirectory() #TODO
+    current_buffer = vim.current.buffer #TODO: vim
+    # We're going to assume that we only care about the current buffer.
+    current_filepath = vimsupport.GetBufferFilepath(current_buffer)
+    line, column = vimsupport.CurrentLineAndColumn()
+    
+    return {
+	'filepath': current_filepath,
+	'line_num': line + 1,
+	'column_num': column + 1,
+	'working_dir': working_dir,
+	'file_data': vimsupport.GetUnsavedAndSpecifiedBufferData( current_buffer,
+				      current_filepath )
+    }
+
 #def _LoadExtraConfFile( filepath ):
 #    BaseRequest().PostDataToHandler( { 'filepath': filepath },
 #                                       'load_extra_conf_file' )
@@ -135,6 +161,9 @@ class BaseRequest(object):
 #def _IgnoreExtraConfFile( filepath ):
 #    BaseRequest().PostDataToHandler( { 'filepath': filepath },
 #                                       'ignore_extra_conf_file' )
+
+def _ToUtf8Json(data):
+  return ToBytes(json.dumps(data) if data else None)
 
 def DisplayServerException( exception, truncate_message = False ):
     serialized_exception = str( exception )
@@ -163,18 +192,17 @@ def _IgnoreExtraConfFile( filepath ):
     BaseRequest().PostDataToHandler( { 'filepath': filepath },
                                        'ignore_extra_conf_file' )
 
-def DisplayServerException( exception, truncate_message = False ):
-    serialized_exception = str( exception )
-
-    # We ignore the exception about the file already being parsed since it comes
-    # up often and isn't something that's actionable by the user.
-    if 'already being parsed' in serialized_exception:
-        return
-    vimsupport.PostVimMessage( serialized_exception, truncate = truncate_message )
-
 def _BuildUri(handler):
+    _logger.info(native(ToBytes(urljoin(BaseRequest.server_location, handler))))
     return native(ToBytes(urljoin(BaseRequest.server_location, handler)))
 
+class ServerError(Exception):
+    def __init__(self,message):
+        super(ServerError, self).__init__(message)
+
+def MakeServerException(data):
+    return ServerError( '{0}: {1}'.format( data[ 'exception' ][ 'TYPE' ],
+                                             data[ 'message' ] ) )
 #def _ValidateResponseObject( response ):
 #    our_hmac = CreateHmac( response.content, BaseRequest.hmac_secret )
 #    their_hmac = ToBytes( b64decode( response.headers[ _HMAC_HEADER ] ) )
