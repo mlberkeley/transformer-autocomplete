@@ -1,3 +1,7 @@
+'''
+inference('insert text here')
+'''
+
 """
 Sequence-to-Sequence Modeling with nn.Transformer and TorchText
 ===============================================================
@@ -337,7 +341,7 @@ nhead = 2 # the number of heads in the multiheadattention models
 dropout = 0.2 # the dropout value
 path = "./model"
 saved_model = TransformerModel(ntokens, emsize, nhead, nhid, nlayers, dropout).to(device)
-saved_model.load_state_dict(torch.load("/home/spvengat/Documents/ml@b/text_editing/model"))
+saved_model.load_state_dict(torch.load("/home/spvengat/Documents/ml@b/text_editing/model_2"))
 
 def word_ids_to_sentence(id_tensor, vocab, join=None):
     """Converts a sequence of word ids to a sentence"""
