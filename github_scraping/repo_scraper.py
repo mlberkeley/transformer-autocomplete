@@ -11,7 +11,7 @@ import pickle
 TOKENS_CSV = "tokens.csv"
 DEST_CSV = "scraped_data.csv"
 MIN_STARS = 5
-NUM_REPOS = 100
+NUM_REPOS = 10000
 
 # Wrapper around github.Github class
 class RotatingAuthRepo():
@@ -150,7 +150,10 @@ def get_repo_files(repo):
 # A function to get a list of public repos at least min_num_repos long, where each repo is not a 
 # fork and has at least min_num_stars stars
 # NOTE: Not robust to rate limiting, so call this once and save the result in a pickle file
-def get_public_repos(token_to_use, min_num_repos, min_num_stars, initial_since=0):
+def get_public_repos(tokens, min_num_repos, min_num_stars, initial_since=0):
+    sleep_time_in_sec = 0.1
+    current_idx = 0
+    token_to_use = tokens[current_idx]
     valid_repos = []
     since = initial_since
     g = Github(token_to_use)
@@ -163,10 +166,18 @@ def get_public_repos(token_to_use, min_num_repos, min_num_stars, initial_since=0
                 since += 1
                 if (not potential_repo.fork) and (potential_repo.stargazers_count >= min_num_stars):
                     valid_repos.append(potential_repo.full_name)
+        except RateLimitExceededException:
+            print("Rate limit exceeded, sleeping for " + str(sleep_time_in_sec) + " seconds.")
+            time.sleep(sleep_time_in_sec)
+            sleep_time_in_sec *= 2
+            current_idx = (current_idx + 1) % len(tokens)
+            token_to_use = tokens[current_idx]
+            g = Github(token_to_use)
         except GithubException as ge:
-            # The case where we try to access a deleted repo
+            # The case where we try to access a deleted repo (or general error case)
             print(ge.data["message"])
             pass
+        
     
     return valid_repos
             
@@ -176,7 +187,7 @@ tokens_df = pd.read_csv("tokens.csv")
 final_df = pd.DataFrame(data={"Repo Url" : [], "Path in Repo" : [], "Source Languages" : [], "B64 File Contents" : []})
 
 # A list of 10,000 public repos to get the contents of- filtered by stars/fork-iness
-repos_to_pull = get_public_repos(tokens_df["Token Hex"][2], NUM_REPOS, MIN_STARS)
+repos_to_pull = get_public_repos(list(tokens_df["Token Hex"]), NUM_REPOS, MIN_STARS)
 #repos_to_pull = pickle.load("Repo_List.p")
 
 #for repo_to_pull in repos_to_pull:
