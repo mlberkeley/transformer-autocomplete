@@ -378,3 +378,15 @@ def last_word(text):
     #print(arrs)
     output = TEXT.vocab.itos[arrs[-1][-1]]
     print(output)
+
+
+def top_10(text):
+	INPUT = torchtext.data.Field(sequential=True, tokenize=tokenizer, lower=True)
+    clean_input = INPUT.preprocess(input)
+    string_to_index = torch.tensor([TEXT.vocab.stoi[i] for i in clean_input], device="cpu")
+    arrs = saved_model(string_to_index).cpu().data.numpy()
+    last_word = len(clean_input) - 1
+    ind = sorted(range(len(arrs[last_word][last_word])), key=lambda i: arrs[last_word][last_word][i])[-10:]
+    ind = list(reversed(ind))
+    output = [TEXT.vocab.itos[i] for i in ind]
+    print(output)
