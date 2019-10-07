@@ -1,10 +1,12 @@
 from utils import ToUnicode
 from base_request import BaseRequest, DisplayServerException
+from test_request import TestRequest
 
-import vimsupport
+#import vimsupport
 from vimsupport import NO_COMPLETIONS
 
 class CompletionRequest(BaseRequest):
+
     def __init__(self, request_data):
         super(CompletionRequest, self).__init__()
         self.request_data = request_data
@@ -15,7 +17,7 @@ class CompletionRequest(BaseRequest):
                                                             'completions')
     
     def Done(self):
-        return bool(self._response_future) and self.response_future.done()
+        return bool(self._response_future) and self._response_future.done()
 
     def _RawResponse(self):
         if not self._response_future:
@@ -40,23 +42,26 @@ class CompletionRequest(BaseRequest):
         else:
             pass #TODO
 
-    def _ConvertCompletionDataToVimData( completion_identifier, completion_data ):
-      # See :h complete-items for a description of the dictionary fields.
-        return {
-            'word'     : completion_data[ 'insertion_text' ],
-            'abbr'     : completion_data.get( 'menu_text', '' ),
-            'menu'     : completion_data.get( 'extra_menu_info', '' ),
-            'kind'     : ToUnicode( completion_data.get( 'kind', '' ) )[ :1 ].lower(),
-            'equal'    : 1,
-            'dup'      : 1,
-            'empty'    : 1,
-            # We store the completion item index as a string in the completion
-            # user_data. This allows us to identify the _exact_ item that was completed
-            # in the CompleteDone handler, by inspecting this item from v:completed_item
-            #
-            # We convert to string because completion user data items must be strings.
-            #
-            # Note: Not all versions of Vim support this (added in 8.0.1483), but adding
-            # the item to the dictionary is harmless in earlier Vims.
-            'user_data': str( completion_identifier )
-        }
+def _ConvertCompletionDatasToVimDatas(response_data):
+    return [_ConvertCompletionDataToVimData(i, x) for i, x in enumerate(response_data)]
+
+def _ConvertCompletionDataToVimData( completion_identifier, completion_data ):
+  # See :h complete-items for a description of the dictionary fields.
+    return {
+        'word'     : completion_data[ 'insertion_text' ],
+        'abbr'     : completion_data.get( 'menu_text', '' ),
+        'menu'     : completion_data.get( 'extra_menu_info', '' ),
+        'kind'     : ToUnicode( completion_data.get( 'kind', '' ) )[ :1 ].lower(),
+        'equal'    : 1,
+        'dup'      : 1,
+        'empty'    : 1,
+        # We store the completion item index as a string in the completion
+        # user_data. This allows us to identify the _exact_ item that was completed
+        # in the CompleteDone handler, by inspecting this item from v:completed_item
+        #
+        # We convert to string because completion user data items must be strings.
+        #
+        # Note: Not all versions of Vim support this (added in 8.0.1483), but adding
+        # the item to the dictionary is harmless in earlier Vims.
+        'user_data': str( completion_identifier )
+    }

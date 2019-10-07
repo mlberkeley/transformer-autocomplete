@@ -1,5 +1,5 @@
-
 let s:completion = {}
+let s:completion_stopped = 0
 let s:script_folder_path = escape( expand( '<sfile>:p:h' ), '\' )
 let g:gpt_server_python_interpreter = '//anaconda/bin/python3.7'
 let s:pollers = {
@@ -46,8 +46,6 @@ print("Root folder {}".format(root_folder))
 dependencies = [p.normpath(p.join(root_folder, '../server')),
                 '//anaconda3/lib/python3.7', '/Users/phil/.local/lib/python3.7/site-packages',
                 '//anaconda3/lib/python3.7/site-packages']
-#if sys.version_info[0] == 2:
-#    dependencies.append(p.join('pythonfutures'))
 
 for d in dependencies:
 	sys.path.append(d)
@@ -96,6 +94,7 @@ function! s:SetCompleteFunc()
 endfunction
 
 function! gptplugin#CompleteFunc( findstart, base )
+  echom "CompleteFunc"
   if a:findstart
     if s:completion.line != line( '.' )
       let s:completion.completion_start_column +=
@@ -119,18 +118,19 @@ function! s:SetUpCompleteopt()
 	set completeopt-=longest
 endfunction
 
-function! s:DoCompletion()
+function! gptplugin#DoCompletion()
+    echom "Doing Completion"
 	if s:completion_stopped
 		let s:completion_stopped = 0
 		let s:completion = s:default_completion
 		return
 	endif
-	call s:Complete()
+    call s:Complete()
 	call s:RequestCompletion()
 endfunction
 
-
 function! s:RequestCompletion()
+    echom "Requesting Completion"
 	exec s:python_command "gpt_state.SendCompletionRequest()"
 	call s:PollCompletion()
 endfunction
@@ -147,7 +147,7 @@ endfunction
 function! s:PollCompletion(...)
 	if !s:Pyeval('gpt_state.CompletionRequestReady()')
 		let s:pollers.completion.id = timer_start(
-			\ s:poller.completion.wait_milliseconds,
+			\ s:pollers.completion.wait_milliseconds,
 			\ function('s:PollCompletion'))
 		return
 	endif
@@ -174,5 +174,6 @@ function! s:SendKeys(keys)
 	call feedkeys(a:keys, 'in')
 endfunction
 	
-inoremap <silent> <C-g> :call DoCompletion()<CR>
+inoremap <silent> <C-g> <C-o>:call gptplugin#DoCompletion()<CR>
+nnoremap <silent> <C-g> :call gptplugin#DoCompletion()<CR>
 call s:Enable()

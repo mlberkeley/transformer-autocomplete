@@ -1,4 +1,6 @@
-*.DS_Store
 *.pyc
+*.swp
+server/logs
+*.DS_Store
 github_scraping/env/*
 github_scraping/tokens.csv

@@ -2,6 +2,9 @@ from future.utils import PY2, native
 import os
 import socket
 import threading
+import logging
+import tempfile
+import datetime
 
 EXECUTABLE_FILE_MASK = os.F_OK | os.X_OK
 if PY2:
@@ -81,3 +84,45 @@ def StartThread(func, *args):
     thread.daemon = True
     thread.start()
     return thread
+
+def CreateLogfile( prefix = '' ):
+    with tempfile.NamedTemporaryFile(prefix = prefix,
+                                     suffix = '.log',
+                                     delete = False ) as logfile:
+        return logfile.name
+
+def JoinLinesAsUnicode( lines ):
+    try:
+        first = next( iter( lines ) )
+    except StopIteration:
+        return str()
+    if isinstance( first, str ):
+        return ToUnicode( '\n'.join( lines ) )
+    if isinstance( first, bytes ):
+        return ToUnicode( b'\n'.join( lines ) )
+    raise ValueError( 'lines must contain either strings or bytes.' )
+
+def OpenForStdHandle(filepath):
+    # Need to open the file in binary mode on py2 because of bytes vs unicode.
+    # If we open in text mode (default), then third-party code that uses `print`
+    # (we're replacing sys.stdout!) with an `str` object on py2 will cause
+    # tracebacks because text mode insists on unicode objects. (Don't forget,
+    # `open` is actually `io.open` because of future builtins.)
+    # Since this function is used for logging purposes, we don't want the output
+    # to be delayed. This means no buffering for binary mode and line buffering
+    # for text mode. See https://docs.python.org/2/library/io.html#io.open
+    if PY2:
+        return open(filepath, mode = 'wb', buffering = 0)
+    return open(filepath, mode = 'w', buffering = 1)
+
+def get_data(filename):
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+    return ToUnicode(''.join(lines) )
+
+def GetLogFile():
+    return './logs/log{}'.format(datetime.datetime.today().isoformat('_')[:-10])
+
+logfile = GetLogFile()
+logging.basicConfig(filename=logfile)
+LOGGER = logging.getLogger('server')
