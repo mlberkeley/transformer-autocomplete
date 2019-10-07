@@ -6,9 +6,12 @@ from github.Repository import Repository
 from base64 import b64decode
 import pandas as pd 
 import time
+import pickle
 
 TOKENS_CSV = "tokens.csv"
 DEST_CSV = "scraped_data.csv"
+MIN_STARS = 5
+NUM_REPOS = 100
 
 # Wrapper around github.Github class
 class RotatingAuthRepo():
@@ -57,7 +60,7 @@ class RotatingAuthRepo():
             except GithubException as ge:
                 if ge.data["errors"][0]["code"] == "too_large":
                     #TODO: Use github data API on failure here? Or just don't use this file
-                    print("Tried to fetch too alrge of a file")
+                    print("Tried to fetch too large of a file")
                 else:
                     print("An unkown error occurred:")
                     print(ge.status, ge.data)
@@ -138,16 +141,48 @@ def get_repo_files(repo):
                 source_languages.append(get_language(path_to_get))
                 b64_file_contents.append(contents.content)
     
+    #TODO: Save individual repo content and concatenate after (offline)?
     return pd.DataFrame(data={"Repo Url" : repo_url_list, 
                             "Path in Repo" : paths_in_repo,
                             "Source Languages" : source_languages, 
                             "B64 File Contents" : b64_file_contents})
 
-#TODO: Get list of public repos- filter by stars/followers/fork-iness
+# A function to get a list of public repos at least min_num_repos long, where each repo is not a 
+# fork and has at least min_num_stars stars
+# NOTE: Not robust to rate limiting, so call this once and save the result in a pickle file
+def get_public_repos(token_to_use, min_num_repos, min_num_stars, initial_since=0):
+    valid_repos = []
+    since = initial_since
+    g = Github(token_to_use)
+    
+    while len(valid_repos) < min_num_repos:
+        try:
+            print("Getting batch since " + str(since))
+            next_batch_of_repos = g.get_repos(since)
+            for potential_repo in next_batch_of_repos:
+                since += 1
+                if (not potential_repo.fork) and (potential_repo.stargazers_count >= min_num_stars):
+                    valid_repos.append(potential_repo.full_name)
+        except GithubException as ge:
+            # The case where we try to access a deleted repo
+            print(ge.data["message"])
+            pass
+    
+    return valid_repos
+            
 
 tokens_df = pd.read_csv("tokens.csv")
-#rotating_auth_repo = RotatingAuthRepo(tokens_df, "SachitShroff/APCS-1")
-rotating_auth_repo = RotatingAuthRepo(tokens_df, "mlberkeley/transformer-autocomplete")
-sample_contents_df = get_repo_files(rotating_auth_repo)
 
-print(sample_contents_df.head())
+final_df = pd.DataFrame(data={"Repo Url" : [], "Path in Repo" : [], "Source Languages" : [], "B64 File Contents" : []})
+
+# A list of 10,000 public repos to get the contents of- filtered by stars/fork-iness
+repos_to_pull = get_public_repos(tokens_df["Token Hex"][2], NUM_REPOS, MIN_STARS)
+#repos_to_pull = pickle.load("Repo_List.p")
+
+#for repo_to_pull in repos_to_pull:
+#    rotating_auth_repo = RotatingAuthRepo(tokens_df, repo_to_pull)
+#    repo_files_df = get_repo_files(rotating_auth_repo)
+    # TODO: Not memory efficient/feasible? Save each individual repo offline instead or save in batches
+#    final_df = pd.concat([final_df, repo_files_df])
+
+#final_df.to_csv(DEST_CSV)
