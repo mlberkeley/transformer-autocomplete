@@ -368,7 +368,8 @@ def inference(input):
     string_to_index = torch.tensor([TEXT.vocab.stoi[i] for i in clean_input], device="cpu")
     arrs = saved_model(string_to_index).cpu().data.numpy()
     output = word_ids_to_sentence(np.argmax(arrs, axis=2), TEXT.vocab, join=' ')
-    print(output)
+    #print(output)
+    return output
 
 def last_word(input):
     INPUT = torchtext.data.Field(sequential=True, tokenize=tokenizer, lower=True)
@@ -377,7 +378,8 @@ def last_word(input):
     arrs = np.argmax(saved_model(string_to_index).cpu().data.numpy(), axis=2)
     #print(arrs)
     output = TEXT.vocab.itos[arrs[-1][-1]]
-    print(output)
+    #print(output)
+    return output
 
 
 def top_10(input):
@@ -389,4 +391,12 @@ def top_10(input):
     ind = sorted(range(len(arrs[last_word][last_word])), key=lambda i: arrs[last_word][last_word][i])[-10:]
     ind = list(reversed(ind))
     output = [TEXT.vocab.itos[i] for i in ind]
-    print(output)
+    #print(output)
+    return output
+
+def next_10(input):
+	for i in range(10):
+		#print(i)
+		output = last_word(input)
+		input = input + ' ' + output
+	print(input)
