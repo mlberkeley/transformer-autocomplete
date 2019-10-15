@@ -1,5 +1,9 @@
-import vim
-from utils import ToUnicode, ToBytes, GetCurrentDirectory
+try:
+    import vim
+except ImportError:
+    print("Vimsupport without vim")
+import os
+from utils import ToUnicode, ToBytes, GetCurrentDirectory, JoinLinesAsUnicode
 
 NO_COMPLETIONS = {
     'line': -1,
@@ -39,7 +43,7 @@ def GetBufferData( buffer_object ):
     return {
       # Add a newline to match what gets saved to disk. See #1455 for details.
         'contents': JoinLinesAsUnicode( buffer_object ) + '\n',
-        'filetypes': FiletypesForBuffer( buffer_object )
+        #'filetypes': FiletypesForBuffer( buffer_object )
     }
 
 def GetBufferFilepath( buffer_object ):
