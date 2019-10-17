@@ -1,3 +1,9 @@
+import torch
+from transformers import *
+import torch.nn.functional as F
+#from run_generation import top_k_top_p_filtering
+#from run_generation import sample_sequence
+
 #print(inference(model=model,enc=tokenizer,phrase='Once upon a', length=5))
 '''
 Method
@@ -74,7 +80,7 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
         logits[indices_to_remove] = filter_value
     return logits
 
-def inference(model = GPT2LMHeadModel, enc = GPT2Tokenizer, phrase= '', top_k = 1, top_p = 0.9, length = 1):
+def inference(model = model, enc = tokenizer, phrase= '', top_k = 1, top_p = 0.9, length = 1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     nsamples = 1
     length = length
