@@ -5,7 +5,7 @@ import argparse
 import shutdown_request as sdr
 from pprint import pprint
 from future.utils import native
-from utils import GetCurrentDirectory, ToBytes, urljoin, ToUnicode, get_data
+from cutils import GetCurrentDirectory, ToBytes, urljoin, ToUnicode, get_data
 
 _READ_TIMEOUT_SEC = 30 
 _HEADERS = {'content-type': 'application/json'}
@@ -167,7 +167,7 @@ def BuildRequestData(buffer_number=None):
     # We're going to assume that we only care about the current buffer.
     line = 4
     column = 4
-    current_filepath = './test/test.txt'
+    current_filepath = '../test/test.txt'
     return {
         'filepath': current_filepath,
         'line_num': line + 1,

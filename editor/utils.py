@@ -121,7 +121,10 @@ def get_data(filename):
     return ToUnicode(''.join(lines) )
 
 def GetLogFile():
-    return './logs/log{}'.format(datetime.datetime.today().isoformat('_')[:-10])
+    if os.path.isdir('../logs'):
+        return '../logs/log{}'.format(datetime.datetime.today().isoformat('_')[:-10])
+    else:
+        return './logs/log{}'.format(datetime.datetime.today().isoformat('_')[:-10])
 
 logfile = GetLogFile()
 logging.basicConfig(filename=logfile)
