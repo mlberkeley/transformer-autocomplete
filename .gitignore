@@ -1,6 +1,7 @@
 *.pyc
 *.swp
 server/logs
+editor/logs
 *.DS_Store
 github_scraping/env/*
 github_scraping/tokens.csv
