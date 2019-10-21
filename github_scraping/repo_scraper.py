@@ -150,7 +150,7 @@ def get_repo_files(repo):
 def get_repo_files_wth_clone(repo):
     clone_command = "git clone https://github.com/" + repo + ".git"
     # TODO: Check for errors by checking returned output
-    returned_output = subprocess.call(clone_command)
+    returned_output = subprocess.call(clone_command, shell=True)
 
     repo_url_list = []
     paths_in_repo = []
@@ -168,7 +168,9 @@ def get_repo_files_wth_clone(repo):
         if isdir(path_to_get):
             for subpath in os.listdir(path_to_get):
                 full_subpath = join(path_to_get, subpath)
+                print(full_subpath)
                 if isdir(full_subpath) or (isfile(full_subpath) and has_source_code_ext(full_subpath)):
+                    print("Adding path " + full_subpath)
                     paths_to_retrieve.append(full_subpath)
 
         elif isfile(path_to_get):
@@ -179,23 +181,22 @@ def get_repo_files_wth_clone(repo):
                 paths_in_repo.append(path_to_get)
                 source_languages.append(get_language(path_to_get))
 
-                with open(path_to_get, "r") as f:
+                with open(path_to_get, "rb") as f:
                     file_contents = f.read()
                 
-                byte_file_contents = file_contents.encode('utf-8')
-                b64_file_contents.append(b64encode(byte_file_contents))
+                b64_file_contents.append(b64encode(file_contents))
 
         else:
             # Edgecase where a path des not point to a file or to a directory- just do nothing
             pass
         
-        remove_command = "rm -rf " + repo.split("/")[-1]
-        returned_output = subprocess.call(remove_command)
+    remove_command = "rm -rf " + repo.split("/")[-1]
+    returned_output = subprocess.call(remove_command, shell=True)
 
-        return pd.DataFrame(data={"Repo Url" : repo_url_list, 
-                            "Path in Repo" : paths_in_repo,
-                            "Source Languages" : source_languages, 
-                            "B64 File Contents" : b64_file_contents})
+    return pd.DataFrame(data={"Repo Url" : repo_url_list, 
+                        "Path in Repo" : paths_in_repo,
+                        "Source Languages" : source_languages, 
+                        "B64 File Contents" : b64_file_contents})
 
 # A function to get a list of public repos at least min_num_repos long, where each repo is not a 
 # fork and has at least min_num_stars stars
@@ -235,7 +236,10 @@ def get_public_repos(tokens, min_num_repos, min_num_stars, initial_since=0):
 # NOTE: This simplistic calculation returns the result based on the max filename of the form <number>.csv
 # in temp_dir (this is consistent with the saving method used here)
 def get_max_saved_repo_num(temp_dir):
-    return max([int(filename[:-4]) if filename[-4:] == ".csv" else -1 for filename in os.listdir(temp_dir)])
+    filename_ints = [int(filename[:-4]) if filename[-4:] == ".csv" else -1 for filename in os.listdir(temp_dir)]
+    if len(filename_ints) == 0:
+        return -1
+    return max(filename_ints)
 
 def merge_and_save_temp_dfs(final_savefile, temp_dir):
     #Once we reach here than the to-do list must be empty
@@ -265,14 +269,17 @@ def scrape_repos_with_api(pickled_to_do_list, tokens_df, final_savefile, temp_di
     # Get the current list of repos to pull (which funcitons as a to-do list)
     with open(pickled_to_do_list, "rb") as f:
         repos_to_pull = pickle.load(f)
+        # Edgecase when there's only 1 repo left- pickle loads as str instead of 1-element list
+        if isinstance(repos_to_pull, str):
+            repos_to_pull = [repos_to_pull]
 
-    offset = get_max_saved_repo_num(temp_dir)
+    offset = get_max_saved_repo_num(temp_dir) + 1
 
     for i in range(len(repos_to_pull)):
         repo_to_pull = repos_to_pull.pop()
         rotating_auth_repo = RotatingAuthRepo(tokens_df, repo_to_pull)
         repo_files_df = get_repo_files(rotating_auth_repo)
-        repo_files_df.to_csv(join(temp_dir, str(offset + i + 1) + ".csv"))
+        repo_files_df.to_csv(join(temp_dir, str(offset + i) + ".csv"))
         # "Save" updated to-do list so can resume on interrupt
         with open(pickled_to_do_list, "wb") as f:
             pickle.dump(repo_to_pull, f)
@@ -285,14 +292,18 @@ def scrape_repos_with_git_clone(pickled_to_do_list, final_savefile, temp_dir):
     # Get the current list of repos to pull (which funcitons as a to-do list)
     with open(pickled_to_do_list, "rb") as f:
         repos_to_pull = pickle.load(f)
+        # Edgecase when there's only 1 repo left- pickle loads as str instead of 1-element list
+        if isinstance(repos_to_pull, str):
+            repos_to_pull = [repos_to_pull]
 
-    offset = get_max_saved_repo_num(temp_dir)
+    offset = get_max_saved_repo_num(temp_dir) + 1
 
     for i in range(len(repos_to_pull)):
         repo_to_pull = repos_to_pull.pop()
-        # TODO: Check to see if repo_to_pull name is ok (whouldn't be same as temp_dir or any existing dirs)
+        print("Getting repo: " + repo_to_pull)
+        # TODO: Check to see if repo_to_pull name is ok (wouldn't be same as temp_dir or any existing dirs)
         repo_files_df = get_repo_files_wth_clone(repo_to_pull)
-        repo_files_df.to_csv(join(temp_dir, str(offset + i + 1) + ".csv"))
+        repo_files_df.to_csv(join(temp_dir, str(offset + i) + ".csv"))
         # "Save" updated to-do list so can resume on interrupt
         with open(pickled_to_do_list, "wb") as f:
             pickle.dump(repo_to_pull, f)
@@ -308,7 +319,7 @@ def main():
     TEMP_DIR = "tmp"
     MIN_STARS = 5
     NUM_REPOS = 10000
-    REPO_LIST = None
+    REPO_LIST = "Test_Repo_List.p"
 
 
     if REPO_LIST is None:
@@ -318,7 +329,7 @@ def main():
         save_file = "Repo_List_" + str(len(repos_to_pull)) + "_" + str(MIN_STARS) + "+.p"
         with open(save_file, "wb") as f:
             pickle.dump(repos_to_pull, f)
-        REPO_LIST = save_file #Useless
+        REPO_LIST = save_file
 
     # Using API the scraping portion (getting list of repos is still done with API until I can get BigQuery to Work)
     if USING_API: 
