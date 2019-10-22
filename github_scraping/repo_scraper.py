@@ -190,7 +190,7 @@ def get_repo_files_wth_clone(repo):
             # Edgecase where a path des not point to a file or to a directory- just do nothing
             pass
         
-    remove_command = "rm -rf " + repo.split("/")[-1]
+    remove_command = "rm -rf ./" + repo.split("/")[-1]
     returned_output = subprocess.call(remove_command, shell=True)
 
     return pd.DataFrame(data={"Repo Url" : repo_url_list, 
@@ -283,7 +283,7 @@ def scrape_repos_with_api(pickled_to_do_list, tokens_df, final_savefile, temp_di
         repo_files_df.to_csv(join(temp_dir, str(offset + i) + ".csv"))
         # "Save" updated to-do list so can resume on interrupt
         with open(pickled_to_do_list, "wb") as f:
-            pickle.dump(repo_to_pull, f)
+            pickle.dump(repos_to_pull, f)
 
     merge_and_save_temp_dfs(final_savefile, temp_dir)
     
@@ -307,7 +307,7 @@ def scrape_repos_with_git_clone(pickled_to_do_list, final_savefile, temp_dir):
         repo_files_df.to_csv(join(temp_dir, str(offset + i) + ".csv"))
         # "Save" updated to-do list so can resume on interrupt
         with open(pickled_to_do_list, "wb") as f:
-            pickle.dump(repo_to_pull, f)
+            pickle.dump(repos_to_pull, f)
 
     merge_and_save_temp_dfs(final_savefile, temp_dir)
 

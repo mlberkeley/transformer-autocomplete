@@ -6,3 +6,4 @@ editor/logs
 github_scraping/env/*
 github_scraping/tokens.csv
 *.csv
+*.pem
