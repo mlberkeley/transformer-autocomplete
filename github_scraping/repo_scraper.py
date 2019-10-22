@@ -168,9 +168,9 @@ def get_repo_files_wth_clone(repo):
         if isdir(path_to_get):
             for subpath in os.listdir(path_to_get):
                 full_subpath = join(path_to_get, subpath)
-                print(full_subpath)
+                #print(full_subpath)
                 if isdir(full_subpath) or (isfile(full_subpath) and has_source_code_ext(full_subpath)):
-                    print("Adding path " + full_subpath)
+                    #print("Adding path " + full_subpath)
                     paths_to_retrieve.append(full_subpath)
 
         elif isfile(path_to_get):
@@ -320,7 +320,7 @@ def main():
     TEMP_DIR = "tmp"
     MIN_STARS = 5
     NUM_REPOS = 10000
-    REPO_LIST = "Test_Repo_List.p"
+    REPO_LIST = "To-Do-List.p"
 
 
     if REPO_LIST is None:
