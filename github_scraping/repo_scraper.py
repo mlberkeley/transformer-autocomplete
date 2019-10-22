@@ -242,7 +242,8 @@ def get_max_saved_repo_num(temp_dir):
     return max(filename_ints)
 
 def merge_and_save_temp_dfs(final_savefile, temp_dir):
-    #Once we reach here than the to-do list must be empty
+    # Once we reach here then the to-do list must be empty
+    # TODO: Right now the to-do list always saves with the last element on completion
     repo_urls = []
     paths_in_repo = []
     source_langs = []
