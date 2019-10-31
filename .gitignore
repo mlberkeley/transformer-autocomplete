@@ -5,3 +5,5 @@ editor/logs
 *.DS_Store
 github_scraping/env/*
 github_scraping/tokens.csv
+*.csv
+*.pem

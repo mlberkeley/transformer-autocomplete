@@ -69,7 +69,7 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
 
         # Remove tokens with cumulative probability above the threshold
         sorted_indices_to_remove = torch.tensor(cumulative_probs >= top_p, dtype=torch.uint8)
-        print(sorted_indices_to_remove.shape)
+        #print(sorted_indices_to_remove.shape)
         # Shift the indices to the right to keep also the first token above the threshold
         sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
         sorted_indices_to_remove[..., 0] = 0
@@ -105,7 +105,7 @@ def inference(model = model, enc = tokenizer, phrase= '', top_k = 1, top_p = 0.9
         batch_size=batch_size,
         temperature=temperature, top_k=top_k, device=device,
         top_p=top_p,
-        stop_token=stop_token
+        stop_token=[]#stop_token
     )
     out = out[:, len(context_tokens):].tolist()
     return enc.decode(out[0])

@@ -1,1 +1,1 @@
-docker run -it -v $1:/github_scraping ubuntu:latest 
+docker run -it -v $1:/transformer-autocomplete sachit1234/nv_autocomplete:latest
