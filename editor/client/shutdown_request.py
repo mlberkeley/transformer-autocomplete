@@ -1,4 +1,3 @@
-#from base_request import BaseRequest
 from test_request import TestRequest
 
 TIMEOUT_SECONDS = 0.1

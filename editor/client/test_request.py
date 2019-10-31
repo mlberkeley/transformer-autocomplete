@@ -2,7 +2,6 @@ import json
 import logging
 import time
 import argparse
-import shutdown_request as sdr
 from pprint import pprint
 from future.utils import native
 from cutils import GetCurrentDirectory, ToBytes, urljoin, ToUnicode, get_data
@@ -51,6 +50,8 @@ class TestRequest(object):
 
     def _ConvertCompletionDataToVimData(self, completion_data ):
       # See :h complete-items for a description of the dictionary fields.
+        print(list(completion_data['completions'].keys()))
+        completion_data = completion_data['completions'] if 'completions' in completion_data else completion_data
         return {
             'word'     : completion_data[ 'insertion_text' ],
             'abbr'     : completion_data.get( 'menu_text', '' ),
@@ -85,8 +86,11 @@ class TestRequest(object):
             _logger.error(e)
         except Exception as e:
             print("other exception {}".format(e))    
+            print(e.msg)
+            print(e.doc)
             _logger.exception(e)
         return None
+
     def PostDataToHandler( self,
                            data,
                            handler,
@@ -165,9 +169,9 @@ def _ToUtf8Json(data):
 def BuildRequestData(buffer_number=None):
     working_dir = GetCurrentDirectory() #TODO
     # We're going to assume that we only care about the current buffer.
-    line = 4
-    column = 4
-    current_filepath = '../test/test.txt'
+    line = 5
+    column = 28
+    current_filepath = '/Users/phil/nvidia/editor/test/test.txt'
     return {
         'filepath': current_filepath,
         'line_num': line + 1,
@@ -175,7 +179,6 @@ def BuildRequestData(buffer_number=None):
         'working_dir': working_dir,
         'file_data': get_data(current_filepath)
     }
-
 
 def _JsonFromFuture(future):
     response = future.result()
@@ -192,10 +195,11 @@ def _BuildUri(handler, loc=None):
         uri = native(ToBytes(urljoin(TestRequest.server_location, handler)))
     else:
         uri = native(ToBytes(urljoin(loc, handler)))
-    print("URI: {}".format(uri))
+    print("URI {}".format(uri))
     return uri
 
 if __name__ == '__main__':
+    import shutdown_request as sdr
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=0,
                         help='server port')
@@ -214,8 +218,7 @@ if __name__ == '__main__':
     def get_completion_response():
         response = lcr.Response()
         return response
-    for i in range(100):
-        time.sleep(0.3)
+    for i in range(1):
         if request_ready():
             response = get_completion_response()
             print("Got a response!")

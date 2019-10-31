@@ -69,4 +69,3 @@ iabbrev tehn then
 iabbrev slef self 
 iabbrev adn and
 nnoremap <leader>" viw<esc>a"<esc>bi"<esc>lel
-nnoremap 9 $
