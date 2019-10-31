@@ -1,14 +1,22 @@
 ## Adapted from YCM
-import vim
-import vimsupport
+try:
+    import vim
+    import vimsupport
+except ImportError:
+    print("No vim for baserequest.")
 import json
 import logging
 from future.utils import native
-from utils import GetCurrentDirectory, ToBytes, urljoin, get_data
+try:
+    from utils import GetCurrentDirectory, ToBytes, urljoin, get_data
+except ImportError:
+    import sys
+    sys.path.insert(0, '../')
+    from utils import GetCurrentDirectory, ToBytes, urljoin, get_data
 
 _READ_TIMEOUT_SEC = 30 
 _HEADERS = {'content-type': 'application/json'}
-_CONNECT_TIMEOUT_SEC = 0.01
+_CONNECT_TIMEOUT_SEC = 1.
 _logger = logging.getLogger('gpt')
 
 class BaseRequest(object):
@@ -49,7 +57,11 @@ class BaseRequest(object):
             _logger.error(e)
         except Exception as e:
             print("other exception {}".format(e))    
+            print(e.msg)
+            print(e.doc)
             _logger.exception(e)
+            _logger.exception(e.msg)
+            _logger.exception(e.doc)
             #DisplayServerException(e, truncate_message)
         return None
 
@@ -125,12 +137,12 @@ class BaseRequest(object):
 
     server_location = ''
 
-def BuildRequestData_(buffer_number=None):
+def BuildRequestDataTest(buffer_number=None):
     working_dir = GetCurrentDirectory() #TODO
     # We're going to assume that we only care about the current buffer.
     line = 4
     column = 4
-    current_filepath = './test/test.txt'
+    current_filepath = '/Users/phil/nvidia/editor/test/test.txt'
     return {
         'filepath': current_filepath,
         'line_num': line + 1,
@@ -193,8 +205,10 @@ def _IgnoreExtraConfFile( filepath ):
                                        'ignore_extra_conf_file' )
 
 def _BuildUri(handler):
-    _logger.info(native(ToBytes(urljoin(BaseRequest.server_location, handler))))
-    return native(ToBytes(urljoin(BaseRequest.server_location, handler)))
+    uri = native(ToBytes(urljoin(BaseRequest.server_location, handler)))
+    print("URI from uri {} | params: {} {}".format(uri, BaseRequest.server_location, handler))
+    _logger.info(uri)
+    return uri
 
 class ServerError(Exception):
     def __init__(self,message):

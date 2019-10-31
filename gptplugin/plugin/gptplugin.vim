@@ -43,15 +43,16 @@ import vim
 print("Hello from python version {}.{} with executable {}".format(sys.version_info[0], sys.version_info[1], sys.executable))
 root_folder = p.normpath( p.join( vim.eval( 's:script_folder_path' ), '..' ) )
 print("Root folder {}".format(root_folder))
-dependencies = [p.normpath(p.join(root_folder, '../server')),
-                '//anaconda3/lib/python3.7', '/Users/phil/.local/lib/python3.7/site-packages',
-                '//anaconda3/lib/python3.7/site-packages']
+dependencies = [p.normpath(p.join(root_folder, '../editor/client')),
+                '/usr/local/lib/python3.5/site-packages', '/Users/phil/.local/lib/python3.5/site-packages', '/Users/phil/Library/Python/3.5/lib/python/site-packages',
+                '/usr/local/lib/python3.5/']
 
 for d in dependencies:
 	sys.path.append(d)
 try:
-    import base, vimsupport, completion
-    gpt_state = completion.Completer()
+    import base, vimsupport, completion, utils
+    logfile = utils.GetLogFile()
+    gpt_state = completion.Completer(logfile=logfile+"-server")
 except Exception as error:
     for line in traceback.format_exc().splitlines():
         vim.command( "echom '{0}'".format( line.replace( "'", "''" ) ) )
@@ -67,7 +68,6 @@ EOF
 endfunction
 
 function! s:Enable()
-	echom "Hello"
 	let s:status = s:SetUpPython()
 	if !s:status
 		return
@@ -173,7 +173,7 @@ endfunction
 function! s:SendKeys(keys)
 	call feedkeys(a:keys, 'in')
 endfunction
-	
+
 inoremap <silent> <C-g> <C-o>:call gptplugin#DoCompletion()<CR>
 nnoremap <silent> <C-g> :call gptplugin#DoCompletion()<CR>
 call s:Enable()

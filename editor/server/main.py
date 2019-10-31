@@ -7,7 +7,7 @@ import json
 import argparse
 import handlers 
 import utils
-from server import StoppableWSGIServer
+from wsgiserver import StoppableWSGIServer
 
 def possibly_detach_from_terminal():
     try:

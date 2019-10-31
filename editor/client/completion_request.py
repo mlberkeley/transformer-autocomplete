@@ -13,6 +13,7 @@ class CompletionRequest(BaseRequest):
         self._response_future = None
 
     def Start(self):
+        print("Starting the completion request")
         self._response_future = self.PostDataToHandlerAsync(self.request_data,
                                                             'completions')
     
@@ -32,8 +33,11 @@ class CompletionRequest(BaseRequest):
 
     def Response(self):
         response = self._RawResponse()
-        response['completions'] = _ConvertCompletionDatasToVimDatas(
-            response['completions'])
+        if response['completions']:
+            response['completions'] = _ConvertCompletionDatasToVimDatas(
+                response['completions'])
+        else:
+            return NO_COMPLETIONS
         return response
 
     def OnCompleteDone(self):
@@ -47,6 +51,7 @@ def _ConvertCompletionDatasToVimDatas(response_data):
 
 def _ConvertCompletionDataToVimData( completion_identifier, completion_data ):
   # See :h complete-items for a description of the dictionary fields.
+
     return {
         'word'     : completion_data[ 'insertion_text' ],
         'abbr'     : completion_data.get( 'menu_text', '' ),
